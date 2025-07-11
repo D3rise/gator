@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"gator/internal/state"
+	"github.com/D3rise/gator/internal/state"
 )
 
 func NewLoginCommand() Command {

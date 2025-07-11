@@ -1,6 +1,6 @@
 package state
 
-import "gator/internal/config"
+import "github.com/D3rise/gator/internal/config"
 
 type State struct {
 	Config *config.Config

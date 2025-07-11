@@ -1,6 +1,6 @@
 package commands
 
-import "gator/internal/state"
+import "github.com/D3rise/gator/internal/state"
 
 type cliCommandHandler func(state *state.State, args ...string) error
 

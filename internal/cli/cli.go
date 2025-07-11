@@ -2,8 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"gator/internal/commands"
-	"gator/internal/state"
+	"github.com/D3rise/gator/internal/commands"
+	"github.com/D3rise/gator/internal/state"
 	"maps"
 	"slices"
 )

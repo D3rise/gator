@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"gator/internal/state"
+	"github.com/D3rise/gator/internal/state"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ func newHelpCommandHandler(commands []Command) func(state *state.State, args ...
 		for _, command := range commands {
 			fmt.Printf(" - %s %s: %s", command.Name, formatCommandArgs(command.Args), command.Description)
 		}
-		
+
 		fmt.Println()
 		return nil
 	}

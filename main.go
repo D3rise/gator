@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"gator/internal/cli"
-	"gator/internal/commands"
-	"gator/internal/config"
-	"gator/internal/state"
+	"github.com/D3rise/gator/internal/cli"
+	"github.com/D3rise/gator/internal/commands"
+	"github.com/D3rise/gator/internal/config"
+	"github.com/D3rise/gator/internal/state"
 	"log"
 	"os"
 )
