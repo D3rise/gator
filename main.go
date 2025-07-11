@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configPathEnv = "gator.yml"
+	configPathEnv = "CONFIG_PATH"
 )
 
 func main() {
