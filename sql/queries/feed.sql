@@ -6,10 +6,14 @@ VALUES
 RETURNING *;
 
 -- name: GetFeedListSortedByCreation :many
-SELECT * FROM "feed" ORDER BY "feed"."created_at";
+SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
+    JOIN "user" u on "feed".user_id = u.id
+    ORDER BY "feed"."created_at";
 
 -- name: GetFeedById :one
-SELECT * FROM "feed" WHERE id = $1;
+SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
+    JOIN "user" u ON feed.user_id = u."id"
+    WHERE "feed"."id" = $1;
 
 -- name: CheckFeedExistenceByName :one
 SELECT EXISTS (SELECT 1 FROM "feed" WHERE "name" = $1);

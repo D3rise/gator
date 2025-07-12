@@ -41,6 +41,7 @@ func main() {
 	appCLI.Register(commands.NewUsersCommand())
 	appCLI.Register(commands.NewAggCommand())
 	appCLI.Register(commands.NewAddFeedCommand())
+	appCLI.Register(commands.NewFeedsCommand())
 
 	// Help command must be registered last as
 	// it requires list of all registered commands

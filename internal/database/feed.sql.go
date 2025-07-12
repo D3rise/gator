@@ -51,43 +51,65 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 }
 
 const getFeedById = `-- name: GetFeedById :one
-SELECT id, user_id, name, url, created_at, updated_at FROM "feed" WHERE id = $1
+SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
+    JOIN "user" u ON feed.user_id = u."id"
+    WHERE "feed"."id" = $1
 `
 
-func (q *Queries) GetFeedById(ctx context.Context, id uuid.UUID) (Feed, error) {
+type GetFeedByIdRow struct {
+	Feed Feed
+	User User
+}
+
+func (q *Queries) GetFeedById(ctx context.Context, id uuid.UUID) (GetFeedByIdRow, error) {
 	row := q.db.QueryRowContext(ctx, getFeedById, id)
-	var i Feed
+	var i GetFeedByIdRow
 	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Name,
-		&i.Url,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Feed.ID,
+		&i.Feed.UserID,
+		&i.Feed.Name,
+		&i.Feed.Url,
+		&i.Feed.CreatedAt,
+		&i.Feed.UpdatedAt,
+		&i.User.ID,
+		&i.User.Name,
+		&i.User.CreatedAt,
+		&i.User.UpdatedAt,
 	)
 	return i, err
 }
 
 const getFeedListSortedByCreation = `-- name: GetFeedListSortedByCreation :many
-SELECT id, user_id, name, url, created_at, updated_at FROM "feed" ORDER BY "feed"."created_at"
+SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
+    JOIN "user" u on "feed".user_id = u.id
+    ORDER BY "feed"."created_at"
 `
 
-func (q *Queries) GetFeedListSortedByCreation(ctx context.Context) ([]Feed, error) {
+type GetFeedListSortedByCreationRow struct {
+	Feed Feed
+	User User
+}
+
+func (q *Queries) GetFeedListSortedByCreation(ctx context.Context) ([]GetFeedListSortedByCreationRow, error) {
 	rows, err := q.db.QueryContext(ctx, getFeedListSortedByCreation)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Feed
+	var items []GetFeedListSortedByCreationRow
 	for rows.Next() {
-		var i Feed
+		var i GetFeedListSortedByCreationRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.Name,
-			&i.Url,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Feed.ID,
+			&i.Feed.UserID,
+			&i.Feed.Name,
+			&i.Feed.Url,
+			&i.Feed.CreatedAt,
+			&i.Feed.UpdatedAt,
+			&i.User.ID,
+			&i.User.Name,
+			&i.User.CreatedAt,
+			&i.User.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
