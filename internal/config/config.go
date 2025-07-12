@@ -49,7 +49,7 @@ func read(configPath string) (Config, error) {
 	}
 
 	conf := Config{configPath: configPath}
-	err = json.Unmarshal([]byte(data), &conf)
+	err = json.Unmarshal(data, &conf)
 	if err != nil {
 		return Config{}, err
 	}
