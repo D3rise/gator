@@ -7,6 +7,9 @@ VALUES
 -- name: GetUserByName :one
 SELECT * FROM "user" WHERE name = $1;
 
+-- name: GetAllUsers :many
+SELECT * FROM "user";
+
 -- name: CheckUserExistenceByName :one
 SELECT EXISTS (SELECT 1 FROM "user" WHERE name = $1);
 

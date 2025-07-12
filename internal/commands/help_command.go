@@ -9,7 +9,6 @@ import (
 func NewHelpCommand(commands []Command) Command {
 	return Command{
 		Name:        "help",
-		Args:        []string{},
 		Description: "Displays list of available commands",
 		Handler:     newHelpCommandHandler(commands),
 	}

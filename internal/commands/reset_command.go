@@ -9,7 +9,6 @@ import (
 func NewResetCommand() Command {
 	return Command{
 		Name:        "reset",
-		Args:        []string{},
 		Handler:     resetCommandHandler,
 		Description: "Resets database state for further tests",
 	}

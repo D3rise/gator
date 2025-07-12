@@ -18,6 +18,14 @@ func NewCLI(state *state.State) *CLI {
 }
 
 func (cli *CLI) Register(command commands.Command) {
+	if command.Handler == nil {
+		panic("command handler is nil")
+	}
+
+	if command.Args == nil {
+		command.Args = []string{}
+	}
+
 	cli.commands[command.Name] = command
 }
 
