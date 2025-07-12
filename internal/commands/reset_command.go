@@ -15,7 +15,7 @@ func NewResetCommand() Command {
 }
 
 func resetCommandHandler(state *state.State, _ ...string) error {
-	err := state.Queries.ResetUsersTable(context.Background())
+	err := state.Queries.ResetUserTable(context.Background())
 	if err != nil {
 		return err
 	}

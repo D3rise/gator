@@ -13,5 +13,5 @@ SELECT * FROM "user";
 -- name: CheckUserExistenceByName :one
 SELECT EXISTS (SELECT 1 FROM "user" WHERE name = $1);
 
--- name: ResetUsersTable :exec
-TRUNCATE "user";
+-- name: ResetUserTable :exec
+TRUNCATE "user" CASCADE;

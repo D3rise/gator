@@ -10,30 +10,41 @@ import (
 	"github.com/D3rise/gator/internal/state"
 	_ "github.com/lib/pq"
 	"log"
+	"net/http"
 	"os"
 )
 
 const (
-	configPathEnv = "CONFIG_PATH"
+	configPathEnv = "GATOR_CONFIG_PATH"
 )
 
 func main() {
+	// Initialize config
 	conf := initConfig()
+
+	// Initialize database connection
 	db := initDB(conf)
 	defer db.Close()
-
 	dbQueries := database.New(db)
 
-	appState := state.NewState(&conf, dbQueries)
+	// Initialize http client for the state
+	httpClient := http.Client{}
+
+	// Initialize state and CLI itself
+	appState := state.NewState(&conf, dbQueries, &httpClient)
 	appCLI := cli.NewCLI(appState)
 
+	// Register all the required commands to the CLI
 	appCLI.Register(commands.NewLoginCommand())
 	appCLI.Register(commands.NewRegisterCommand())
 	appCLI.Register(commands.NewResetCommand())
 	appCLI.Register(commands.NewUsersCommand())
+	appCLI.Register(commands.NewAggCommand())
+	appCLI.Register(commands.NewAddFeedCommand())
 
-	// Help command must be registered last as it requires list of commands
-	appCLI.Register(commands.NewHelpCommand(appCLI.GetCommandList()))
+	// Help command must be registered last as
+	// it requires list of all registered commands
+	appCLI.RegisterDefaultCommand(commands.NewHelpCommand(appCLI.GetCommandList()))
 
 	runCommand(appCLI)
 }
@@ -59,7 +70,10 @@ func initDB(conf config.Config) *sql.DB {
 
 func runCommand(appCLI *cli.CLI) {
 	if len(os.Args) <= 1 {
-		_ = appCLI.RunCommand("help", []string{})
+		err := appCLI.RunDefaultCommand(os.Args[1:])
+		if err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 

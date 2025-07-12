@@ -16,7 +16,16 @@ func NewHelpCommand(commands []Command) Command {
 
 func newHelpCommandHandler(commands []Command) func(state *state.State, args ...string) error {
 	return func(state *state.State, args ...string) error {
-		fmt.Print("Welcome to Gator!\n\n")
+		var loggedInText string
+		if state.Config.CurrentUserName != "" {
+			loggedInText = fmt.Sprintf("You are currently logged in as %s", state.Config.CurrentUserName)
+		} else {
+			loggedInText = "You are currently not logged in"
+		}
+
+		fmt.Println("Welcome to Gator!")
+		fmt.Print(loggedInText, "\n\n")
+
 		fmt.Println("Available commands:")
 
 		for _, command := range commands {
