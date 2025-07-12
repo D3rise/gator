@@ -21,7 +21,7 @@ func newHelpCommandHandler(commands []Command) func(state *state.State, args ...
 		fmt.Println("Available commands:")
 
 		for _, command := range commands {
-			fmt.Printf(" - %s %s: %s\n", command.Name, formatCommandArgs(command.Args), command.Description)
+			fmt.Printf(" - %s%s: %s\n", command.Name, formatCommandArgs(command.Args), command.Description)
 		}
 
 		fmt.Println()
@@ -34,5 +34,5 @@ func formatCommandArgs(args []string) string {
 		return ""
 	}
 
-	return "<" + strings.Join(args, "> <") + ">"
+	return " <" + strings.Join(args, "> <") + ">"
 }

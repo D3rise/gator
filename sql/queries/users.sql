@@ -9,3 +9,6 @@ SELECT * FROM "user" WHERE name = $1;
 
 -- name: CheckUserExistenceByName :one
 SELECT EXISTS (SELECT 1 FROM "user" WHERE name = $1);
+
+-- name: ResetUsersTable :exec
+TRUNCATE "user";

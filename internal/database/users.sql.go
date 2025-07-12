@@ -60,3 +60,12 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 	)
 	return i, err
 }
+
+const resetUsersTable = `-- name: ResetUsersTable :exec
+TRUNCATE "user"
+`
+
+func (q *Queries) ResetUsersTable(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, resetUsersTable)
+	return err
+}

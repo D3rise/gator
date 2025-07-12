@@ -29,6 +29,9 @@ func main() {
 
 	appCLI.Register(commands.NewLoginCommand())
 	appCLI.Register(commands.NewRegisterCommand())
+	appCLI.Register(commands.NewResetCommand())
+
+	// Help command must be registered last as it requires list of commands
 	appCLI.Register(commands.NewHelpCommand(appCLI.GetCommandList()))
 
 	runCommand(appCLI)
