@@ -57,6 +57,10 @@ func (cli *CLI) RunCommand(name string, args []string) error {
 		return fmt.Errorf("wrong number of arguments: expected %d arguments, got %d", len(command.Args), len(args))
 	}
 
+	if command.RequiresAuthentication && cli.state.Config.CurrentUserName == "" {
+		return fmt.Errorf("this command requires authentication! Please log in first")
+	}
+
 	return command.Handler(cli.state, args...)
 }
 

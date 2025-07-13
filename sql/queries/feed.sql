@@ -15,5 +15,10 @@ SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
     JOIN "user" u ON feed.user_id = u."id"
     WHERE "feed"."id" = $1;
 
+-- name: GetFeedByUrl :one
+SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
+    JOIN "user" u ON feed.user_id = u."id"
+    WHERE "feed"."url" = $1;
+
 -- name: CheckFeedExistenceByName :one
 SELECT EXISTS (SELECT 1 FROM "feed" WHERE "name" = $1);

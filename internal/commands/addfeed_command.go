@@ -11,10 +11,11 @@ import (
 
 func NewAddFeedCommand() Command {
 	return Command{
-		Name:        "addfeed",
-		Args:        []string{"feedName", "feedUrl"},
-		Handler:     newAddFeedCommandHandler,
-		Description: "Add new feed to database",
+		Name:                   "addfeed",
+		Args:                   []string{"feedName", "feedUrl"},
+		Handler:                newAddFeedCommandHandler,
+		RequiresAuthentication: true,
+		Description:            "Add new feed to database",
 	}
 }
 
@@ -49,7 +50,15 @@ func newAddFeedCommandHandler(state *state.State, args ...string) error {
 		return fmt.Errorf("error creating feed: %w", err)
 	}
 
-	fmt.Println("Successfully created new feed with name", feed.Name, "and url", feed.Url)
+	_, err = state.Queries.CreateNewFeedFollow(context.Background(), database.CreateNewFeedFollowParams{
+		UserID: currentUser.ID,
+		FeedID: feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("error while trying to follow new feed: %w", err)
+	}
+
+	fmt.Println("Successfully created and following new feed with name", feed.Name, "and url", feed.Url)
 
 	return nil
 }
