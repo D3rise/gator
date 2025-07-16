@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/D3rise/gator/internal/commands"
+	"github.com/D3rise/gator/internal/middleware"
 	"github.com/D3rise/gator/internal/state"
 	"maps"
 	"slices"
@@ -11,18 +12,20 @@ import (
 type CLI struct {
 	state          *state.State
 	commands       map[string]commands.Command
+	middlewares    map[string][]middleware.Middleware
 	defaultCommand *commands.Command
 }
 
 func NewCLI(state *state.State) *CLI {
-	return &CLI{state: state, commands: make(map[string]commands.Command)}
+	return &CLI{state: state, commands: make(map[string]commands.Command), middlewares: make(map[string][]middleware.Middleware)}
 }
 
 func (cli *CLI) RegisterDefaultCommand(command commands.Command) {
 	cli.defaultCommand = &command
+	cli.commands[command.Name] = command
 }
 
-func (cli *CLI) Register(command commands.Command) {
+func (cli *CLI) Register(command commands.Command, middlewares ...middleware.Middleware) {
 	if command.Handler == nil {
 		panic("command handler is nil")
 	}
@@ -32,6 +35,7 @@ func (cli *CLI) Register(command commands.Command) {
 	}
 
 	cli.commands[command.Name] = command
+	cli.middlewares[command.Name] = middlewares
 }
 
 func (cli *CLI) RunDefaultCommand(args []string) error {
@@ -57,8 +61,13 @@ func (cli *CLI) RunCommand(name string, args []string) error {
 		return fmt.Errorf("wrong number of arguments: expected %d arguments, got %d", len(command.Args), len(args))
 	}
 
-	if command.RequiresAuthentication && cli.state.Config.CurrentUserName == "" {
-		return fmt.Errorf("this command requires authentication! Please log in first")
+	if middlewares, ok := cli.middlewares[name]; ok {
+		for _, m := range middlewares {
+			err := m.Handler(cli.state, args...)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return command.Handler(cli.state, args...)

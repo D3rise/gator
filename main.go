@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"github.com/D3rise/gator/internal/cli"
 	"github.com/D3rise/gator/internal/commands"
 	"github.com/D3rise/gator/internal/config"
 	"github.com/D3rise/gator/internal/database"
+	"github.com/D3rise/gator/internal/middleware"
 	"github.com/D3rise/gator/internal/state"
 	_ "github.com/lib/pq"
 	"log"
@@ -28,13 +28,6 @@ func main() {
 	defer db.Close()
 
 	dbQueries := database.New(db)
-	if conf.CurrentUserName != "" {
-		err := checkUserExistence(conf.CurrentUserName, dbQueries)
-		if err != nil {
-			_ = conf.SetCurrentUserName("")
-			log.Fatal(err)
-		}
-	}
 
 	// Initialize http client for the state
 	httpClient := http.Client{}
@@ -47,32 +40,18 @@ func main() {
 	appCLI.Register(commands.NewLoginCommand())
 	appCLI.Register(commands.NewRegisterCommand())
 	appCLI.Register(commands.NewResetCommand())
-	appCLI.Register(commands.NewUsersCommand())
-	appCLI.Register(commands.NewAggCommand())
-	appCLI.Register(commands.NewAddFeedCommand())
+	appCLI.Register(commands.NewUsersCommand(), middleware.AuthMiddleware)
+	appCLI.Register(commands.NewAggCommand(), middleware.AuthMiddleware)
+	appCLI.Register(commands.NewAddFeedCommand(), middleware.AuthMiddleware)
 	appCLI.Register(commands.NewFeedsCommand())
-	appCLI.Register(commands.NewFollowCommand())
-	appCLI.Register(commands.NewFollowingCommand())
+	appCLI.Register(commands.NewFollowCommand(), middleware.AuthMiddleware)
+	appCLI.Register(commands.NewFollowingCommand(), middleware.AuthMiddleware)
 
 	// Help command must be registered last as
 	// it requires list of all registered commands
 	appCLI.RegisterDefaultCommand(commands.NewHelpCommand(appCLI.GetCommandList()))
 
 	runCommand(appCLI)
-}
-
-func checkUserExistence(username string, queries *database.Queries) error {
-	exists, err := queries.CheckUserExistenceByName(context.Background(), username)
-	if err != nil {
-		return fmt.Errorf("error while checking user existence: %w", err)
-	}
-
-	if !exists {
-		return fmt.Errorf("current logged in user does not exist. " +
-			"Try to login again or change username directly in ~/.gatorconfig")
-	}
-
-	return nil
 }
 
 func initConfig() config.Config {
