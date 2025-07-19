@@ -5,6 +5,14 @@ VALUES
     ($1, $2, $3)
 RETURNING *;
 
+-- name: SetFeedFetchedAtToNowById :exec
+UPDATE "feed" SET last_fetched_at = NOW() WHERE id = $1;
+
+-- name: GetFeedListSortedByCreation :many
+SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
+    JOIN "user" u on "feed".user_id = u.id
+    ORDER BY "feed"."created_at";
+
 -- name: GetFeedListSortedByLastFetchedAt :many
 SELECT * FROM "feed"
     ORDER BY "feed"."last_fetched_at" NULLS FIRST;

@@ -111,6 +111,52 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (GetFeedByUrlRow
 	return i, err
 }
 
+const getFeedListSortedByCreation = `-- name: GetFeedListSortedByCreation :many
+SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, feed.last_fetched_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
+    JOIN "user" u on "feed".user_id = u.id
+    ORDER BY "feed"."created_at"
+`
+
+type GetFeedListSortedByCreationRow struct {
+	Feed Feed
+	User User
+}
+
+func (q *Queries) GetFeedListSortedByCreation(ctx context.Context) ([]GetFeedListSortedByCreationRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedListSortedByCreation)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFeedListSortedByCreationRow
+	for rows.Next() {
+		var i GetFeedListSortedByCreationRow
+		if err := rows.Scan(
+			&i.Feed.ID,
+			&i.Feed.UserID,
+			&i.Feed.Name,
+			&i.Feed.Url,
+			&i.Feed.CreatedAt,
+			&i.Feed.UpdatedAt,
+			&i.Feed.LastFetchedAt,
+			&i.User.ID,
+			&i.User.Name,
+			&i.User.CreatedAt,
+			&i.User.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFeedListSortedByLastFetchedAt = `-- name: GetFeedListSortedByLastFetchedAt :many
 SELECT id, user_id, name, url, created_at, updated_at, last_fetched_at FROM "feed"
     ORDER BY "feed"."last_fetched_at" NULLS FIRST
@@ -164,4 +210,13 @@ func (q *Queries) GetOldestFeedByUpdatedAt(ctx context.Context) (Feed, error) {
 		&i.LastFetchedAt,
 	)
 	return i, err
+}
+
+const setFeedFetchedAtToNowById = `-- name: SetFeedFetchedAtToNowById :exec
+UPDATE "feed" SET last_fetched_at = NOW() WHERE id = $1
+`
+
+func (q *Queries) SetFeedFetchedAtToNowById(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, setFeedFetchedAtToNowById, id)
+	return err
 }

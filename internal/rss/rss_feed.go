@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type Feed struct {
@@ -27,10 +26,7 @@ type FeedItem struct {
 	PubDate     string `xml:"pubDate"`
 }
 
-func FetchRSSFeed(httpClient http.Client, url string) (*Feed, error) {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
-	defer cancel()
-
+func FetchRSSFeed(ctx context.Context, httpClient http.Client, url string) (*Feed, error) {
 	request, err := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	if err != nil {
 		return nil, err
