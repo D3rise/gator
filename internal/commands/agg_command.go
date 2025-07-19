@@ -21,12 +21,17 @@ func NewAggCommand() Command {
 	}
 }
 
+type feedWithRss struct {
+	rss rss.Feed
+	row database.Feed
+}
+
 func aggCommandHandler(state *state.State, _ ...string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var wg sync.WaitGroup
-	feedCh := make(chan rss.Feed)
+	feedCh := make(chan feedWithRss)
 	go fetchFeeds(ctx, &wg, state, feedCh)
 
 	sigCh := make(chan os.Signal, 1)
@@ -34,26 +39,37 @@ func aggCommandHandler(state *state.State, _ ...string) error {
 	defer signal.Stop(sigCh)
 
 	fmt.Println("Starting RSS feed aggregation. Press Ctrl+C to stop.")
-	fmt.Println("Note: This command currently only processes feeds but doesn't save items to the database.")
-	fmt.Println("To save feed items, a database schema update would be required.")
 
 	for {
 		select {
 		case feed := <-feedCh:
-			// Process the feed in a more structured way
-			fmt.Printf("\n=== Feed: %s ===\n", feed.Channel.Title)
-			fmt.Printf("Link: %s\n", feed.Channel.Link)
-			fmt.Printf("Description: %s\n", feed.Channel.Description)
-			fmt.Printf("Items: %d\n\n", len(feed.Channel.Item))
+			fmt.Printf("\n=== Fetched feed: %s ===\n", feed.rss.Channel.Title)
+			fmt.Printf("Link: %s\n", feed.rss.Channel.Link)
+			fmt.Printf("Description: %s\n", feed.rss.Channel.Description)
+			fmt.Printf("Items: %d\n\n", len(feed.rss.Channel.Item))
 
 			// Print details of each item
-			for i, item := range feed.Channel.Item {
-				if i >= 5 {
-					fmt.Printf("... and %d more items\n", len(feed.Channel.Item)-5)
-					break
+			for i, item := range feed.rss.Channel.Item {
+				publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+				if err != nil {
+					fmt.Printf("Can't parse publish date of item in %s feed: %v\n", feed.rss.Channel.Link, err)
+					continue
 				}
 
-				fmt.Printf("  Item %d: %s\n", i+1, item.Title)
+				err = state.Queries.UpsertPostOnUrl(ctx, database.UpsertPostOnUrlParams{
+					Title:       item.Title,
+					Url:         item.Link,
+					Description: item.Description,
+					PublishedAt: publishedAt,
+					FeedID:      feed.row.ID,
+				})
+
+				if err != nil {
+					fmt.Printf("Error while saving post to database: %v\n", err)
+					continue
+				}
+
+				fmt.Printf(" Saved Item %d: %s\n", i+1, item.Title)
 				fmt.Printf("    Link: %s\n", item.Link)
 				fmt.Printf("    Published: %s\n", item.PubDate)
 			}
@@ -68,7 +84,7 @@ func aggCommandHandler(state *state.State, _ ...string) error {
 	}
 }
 
-func fetchFeeds(ctx context.Context, wg *sync.WaitGroup, state *state.State, out chan<- rss.Feed) {
+func fetchFeeds(ctx context.Context, wg *sync.WaitGroup, state *state.State, out chan<- feedWithRss) {
 	t := time.NewTicker(5 * time.Second)
 
 	// Limit concurrent fetches to 5 at a time
@@ -94,7 +110,7 @@ func fetchFeeds(ctx context.Context, wg *sync.WaitGroup, state *state.State, out
 	}
 }
 
-func fetchNextFeed(ctx context.Context, wg *sync.WaitGroup, state *state.State, out chan<- rss.Feed) {
+func fetchNextFeed(ctx context.Context, wg *sync.WaitGroup, state *state.State, out chan<- feedWithRss) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -126,7 +142,10 @@ func fetchNextFeed(ctx context.Context, wg *sync.WaitGroup, state *state.State, 
 		return
 	}
 
-	out <- *feed
+	out <- feedWithRss{
+		row: *feedToFetch,
+		rss: *feed,
+	}
 }
 
 func getNextFeedToFetch(queries *database.Queries) (*database.Feed, error) {
