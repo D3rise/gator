@@ -31,6 +31,7 @@ func aggCommandHandler(state *state.State, _ ...string) error {
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
+	defer signal.Stop(sigCh)
 
 	fmt.Println("Starting RSS feed aggregation. Press Ctrl+C to stop.")
 	fmt.Println("Note: This command currently only processes feeds but doesn't save items to the database.")
