@@ -12,32 +12,52 @@ import (
 	"github.com/google/uuid"
 )
 
-const getPostsByUserFeedFollows = `-- name: GetPostsByUserFeedFollows :many
-SELECT post.id, post.created_at, post.updated_at, post.title, post.url, post.description, post.published_at, post.feed_id FROM "post"
+const getPostsByUserFeedFollowsPaginated = `-- name: GetPostsByUserFeedFollowsPaginated :many
+SELECT post.id, post.created_at, post.updated_at, post.title, post.url, post.description, post.published_at, post.feed_id, f.id, f.user_id, f.name, f.url, f.created_at, f.updated_at, f.last_fetched_at FROM "post"
     JOIN public.feed f on f.id = post.feed_id
     JOIN public.feed_follow ff on f.id = ff.feed_id
     JOIN public."user" u on u.id = ff.user_id
     WHERE u.id = $1
+    LIMIT $2
+    OFFSET $3
 `
 
-func (q *Queries) GetPostsByUserFeedFollows(ctx context.Context, id uuid.UUID) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsByUserFeedFollows, id)
+type GetPostsByUserFeedFollowsPaginatedParams struct {
+	ID     uuid.UUID
+	Limit  int32
+	Offset int32
+}
+
+type GetPostsByUserFeedFollowsPaginatedRow struct {
+	Post Post
+	Feed Feed
+}
+
+func (q *Queries) GetPostsByUserFeedFollowsPaginated(ctx context.Context, arg GetPostsByUserFeedFollowsPaginatedParams) ([]GetPostsByUserFeedFollowsPaginatedRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByUserFeedFollowsPaginated, arg.ID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Post
+	var items []GetPostsByUserFeedFollowsPaginatedRow
 	for rows.Next() {
-		var i Post
+		var i GetPostsByUserFeedFollowsPaginatedRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Title,
-			&i.Url,
-			&i.Description,
-			&i.PublishedAt,
-			&i.FeedID,
+			&i.Post.ID,
+			&i.Post.CreatedAt,
+			&i.Post.UpdatedAt,
+			&i.Post.Title,
+			&i.Post.Url,
+			&i.Post.Description,
+			&i.Post.PublishedAt,
+			&i.Post.FeedID,
+			&i.Feed.ID,
+			&i.Feed.UserID,
+			&i.Feed.Name,
+			&i.Feed.Url,
+			&i.Feed.CreatedAt,
+			&i.Feed.UpdatedAt,
+			&i.Feed.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -50,6 +70,21 @@ func (q *Queries) GetPostsByUserFeedFollows(ctx context.Context, id uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPostsCountByUserFeedFollows = `-- name: GetPostsCountByUserFeedFollows :one
+SELECT COUNT(*) FROM "post"
+    JOIN public.feed f on f.id = post.feed_id
+    JOIN public.feed_follow ff on f.id = ff.feed_id
+    JOIN public."user" u on u.id = ff.user_id
+    WHERE u.id = $1
+`
+
+func (q *Queries) GetPostsCountByUserFeedFollows(ctx context.Context, id uuid.UUID) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getPostsCountByUserFeedFollows, id)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const upsertPostOnUrl = `-- name: UpsertPostOnUrl :exec

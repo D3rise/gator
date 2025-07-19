@@ -213,7 +213,7 @@ func (q *Queries) GetOldestFeedByUpdatedAt(ctx context.Context) (Feed, error) {
 }
 
 const setFeedFetchedAtToNowById = `-- name: SetFeedFetchedAtToNowById :exec
-UPDATE "feed" SET last_fetched_at = NOW() WHERE id = $1
+UPDATE "feed" SET last_fetched_at = NOW(), updated_at = NOW() WHERE id = $1
 `
 
 func (q *Queries) SetFeedFetchedAtToNowById(ctx context.Context, id uuid.UUID) error {

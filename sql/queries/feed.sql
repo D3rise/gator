@@ -6,7 +6,7 @@ VALUES
 RETURNING *;
 
 -- name: SetFeedFetchedAtToNowById :exec
-UPDATE "feed" SET last_fetched_at = NOW() WHERE id = $1;
+UPDATE "feed" SET last_fetched_at = NOW(), updated_at = NOW() WHERE id = $1;
 
 -- name: GetFeedListSortedByCreation :many
 SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
