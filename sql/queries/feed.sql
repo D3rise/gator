@@ -5,10 +5,12 @@ VALUES
     ($1, $2, $3)
 RETURNING *;
 
--- name: GetFeedListSortedByCreation :many
-SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"
-    JOIN "user" u on "feed".user_id = u.id
-    ORDER BY "feed"."created_at";
+-- name: GetFeedListSortedByLastFetchedAt :many
+SELECT * FROM "feed"
+    ORDER BY "feed"."last_fetched_at" NULLS FIRST;
+
+-- name: GetOldestFeedByUpdatedAt :one
+SELECT * FROM feed ORDER BY updated_at LIMIT 1;
 
 -- name: GetFeedById :one
 SELECT sqlc.embed(feed), sqlc.embed(u) FROM "feed"

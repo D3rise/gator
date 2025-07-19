@@ -11,11 +11,10 @@ import (
 
 func NewAddFeedCommand() Command {
 	return Command{
-		Name:                   "addfeed",
-		Args:                   []string{"feedName", "feedUrl"},
-		Handler:                newAddFeedCommandHandler,
-		RequiresAuthentication: true,
-		Description:            "Add new feed to database",
+		Name:        "addfeed",
+		Args:        []string{"feedName", "feedUrl"},
+		Handler:     newAddFeedCommandHandler,
+		Description: "Add new feed to database",
 	}
 }
 

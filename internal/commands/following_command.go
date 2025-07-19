@@ -8,10 +8,9 @@ import (
 
 func NewFollowingCommand() Command {
 	return Command{
-		Name:                   "following",
-		Handler:                followingCommandHandler,
-		RequiresAuthentication: true,
-		Description:            "List all feeds you are following right now",
+		Name:        "following",
+		Handler:     followingCommandHandler,
+		Description: "List all feeds you are following right now",
 	}
 }
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 type Config struct {
 	DbUrl           string `json:"db_url"`
 	CurrentUserName string `json:"current_user_name"`
+	CurrentUserId   uuid.UUID
 	configPath      string
 }
 
@@ -35,6 +37,11 @@ func NewConfig(customConfigPath string) (Config, error) {
 	}
 
 	return read(configPath)
+}
+
+func (c *Config) SetCurrentUserId(userId uuid.UUID) error {
+	c.CurrentUserId = userId
+	return nil
 }
 
 func (c *Config) SetCurrentUserName(name string) error {

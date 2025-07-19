@@ -27,7 +27,7 @@ INSERT INTO "feed"
     (user_id, name, url)
 VALUES
     ($1, $2, $3)
-RETURNING id, user_id, name, url, created_at, updated_at
+RETURNING id, user_id, name, url, created_at, updated_at, last_fetched_at
 `
 
 type CreateFeedParams struct {
@@ -46,12 +46,13 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
 
 const getFeedById = `-- name: GetFeedById :one
-SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
+SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, feed.last_fetched_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
     JOIN "user" u ON feed.user_id = u."id"
     WHERE "feed"."id" = $1
 `
@@ -71,6 +72,7 @@ func (q *Queries) GetFeedById(ctx context.Context, id uuid.UUID) (GetFeedByIdRow
 		&i.Feed.Url,
 		&i.Feed.CreatedAt,
 		&i.Feed.UpdatedAt,
+		&i.Feed.LastFetchedAt,
 		&i.User.ID,
 		&i.User.Name,
 		&i.User.CreatedAt,
@@ -80,7 +82,7 @@ func (q *Queries) GetFeedById(ctx context.Context, id uuid.UUID) (GetFeedByIdRow
 }
 
 const getFeedByUrl = `-- name: GetFeedByUrl :one
-SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
+SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, feed.last_fetched_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
     JOIN "user" u ON feed.user_id = u."id"
     WHERE "feed"."url" = $1
 `
@@ -100,6 +102,7 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (GetFeedByUrlRow
 		&i.Feed.Url,
 		&i.Feed.CreatedAt,
 		&i.Feed.UpdatedAt,
+		&i.Feed.LastFetchedAt,
 		&i.User.ID,
 		&i.User.Name,
 		&i.User.CreatedAt,
@@ -108,37 +111,28 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (GetFeedByUrlRow
 	return i, err
 }
 
-const getFeedListSortedByCreation = `-- name: GetFeedListSortedByCreation :many
-SELECT feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, u.id, u.name, u.created_at, u.updated_at FROM "feed"
-    JOIN "user" u on "feed".user_id = u.id
-    ORDER BY "feed"."created_at"
+const getFeedListSortedByLastFetchedAt = `-- name: GetFeedListSortedByLastFetchedAt :many
+SELECT id, user_id, name, url, created_at, updated_at, last_fetched_at FROM "feed"
+    ORDER BY "feed"."last_fetched_at" NULLS FIRST
 `
 
-type GetFeedListSortedByCreationRow struct {
-	Feed Feed
-	User User
-}
-
-func (q *Queries) GetFeedListSortedByCreation(ctx context.Context) ([]GetFeedListSortedByCreationRow, error) {
-	rows, err := q.db.QueryContext(ctx, getFeedListSortedByCreation)
+func (q *Queries) GetFeedListSortedByLastFetchedAt(ctx context.Context) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedListSortedByLastFetchedAt)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetFeedListSortedByCreationRow
+	var items []Feed
 	for rows.Next() {
-		var i GetFeedListSortedByCreationRow
+		var i Feed
 		if err := rows.Scan(
-			&i.Feed.ID,
-			&i.Feed.UserID,
-			&i.Feed.Name,
-			&i.Feed.Url,
-			&i.Feed.CreatedAt,
-			&i.Feed.UpdatedAt,
-			&i.User.ID,
-			&i.User.Name,
-			&i.User.CreatedAt,
-			&i.User.UpdatedAt,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Url,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -151,4 +145,23 @@ func (q *Queries) GetFeedListSortedByCreation(ctx context.Context) ([]GetFeedLis
 		return nil, err
 	}
 	return items, nil
+}
+
+const getOldestFeedByUpdatedAt = `-- name: GetOldestFeedByUpdatedAt :one
+SELECT id, user_id, name, url, created_at, updated_at, last_fetched_at FROM feed ORDER BY updated_at LIMIT 1
+`
+
+func (q *Queries) GetOldestFeedByUpdatedAt(ctx context.Context) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getOldestFeedByUpdatedAt)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Url,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastFetchedAt,
+	)
+	return i, err
 }

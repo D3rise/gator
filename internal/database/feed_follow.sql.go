@@ -49,8 +49,34 @@ func (q *Queries) CreateNewFeedFollow(ctx context.Context, arg CreateNewFeedFoll
 	return i, err
 }
 
+const deleteFeedFollowByUrlAndUserId = `-- name: DeleteFeedFollowByUrlAndUserId :one
+WITH feed_cte AS (
+    SELECT id FROM feed WHERE url = $1
+) DELETE FROM feed_follow
+        WHERE feed_follow.user_id = $2 AND feed_id = (SELECT id FROM feed_cte)
+        RETURNING id, user_id, feed_id, created_at, updated_at
+`
+
+type DeleteFeedFollowByUrlAndUserIdParams struct {
+	Url    string
+	UserID uuid.UUID
+}
+
+func (q *Queries) DeleteFeedFollowByUrlAndUserId(ctx context.Context, arg DeleteFeedFollowByUrlAndUserIdParams) (FeedFollow, error) {
+	row := q.db.QueryRowContext(ctx, deleteFeedFollowByUrlAndUserId, arg.Url, arg.UserID)
+	var i FeedFollow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.FeedID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getFeedFollowListByFeedId = `-- name: GetFeedFollowListByFeedId :many
-SELECT feed_follow.id, feed_follow.user_id, feed_follow.feed_id, feed_follow.created_at, feed_follow.updated_at, feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at
+SELECT feed_follow.id, feed_follow.user_id, feed_follow.feed_id, feed_follow.created_at, feed_follow.updated_at, feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, feed.last_fetched_at
     FROM feed_follow
     JOIN public.feed on feed_follow.feed_id = feed.id
     WHERE feed_id = $1 ORDER BY feed_follow.created_at
@@ -82,6 +108,7 @@ func (q *Queries) GetFeedFollowListByFeedId(ctx context.Context, feedID uuid.UUI
 			&i.Feed.Url,
 			&i.Feed.CreatedAt,
 			&i.Feed.UpdatedAt,
+			&i.Feed.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -97,7 +124,7 @@ func (q *Queries) GetFeedFollowListByFeedId(ctx context.Context, feedID uuid.UUI
 }
 
 const getFeedFollowListByUserId = `-- name: GetFeedFollowListByUserId :many
-SELECT feed_follow.id, feed_follow.user_id, feed_follow.feed_id, feed_follow.created_at, feed_follow.updated_at, feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at
+SELECT feed_follow.id, feed_follow.user_id, feed_follow.feed_id, feed_follow.created_at, feed_follow.updated_at, feed.id, feed.user_id, feed.name, feed.url, feed.created_at, feed.updated_at, feed.last_fetched_at
     FROM feed_follow
     JOIN public.feed on feed_follow.feed_id = feed.id
     WHERE feed_follow.user_id = $1
@@ -130,6 +157,7 @@ func (q *Queries) GetFeedFollowListByUserId(ctx context.Context, userID uuid.UUI
 			&i.Feed.Url,
 			&i.Feed.CreatedAt,
 			&i.Feed.UpdatedAt,
+			&i.Feed.LastFetchedAt,
 		); err != nil {
 			return nil, err
 		}

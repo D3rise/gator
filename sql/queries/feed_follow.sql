@@ -1,6 +1,13 @@
 -- name: CreateNewFeedFollow :one
 INSERT INTO feed_follow (user_id, feed_id) VALUES ($1, $2) RETURNING *;
 
+-- name: DeleteFeedFollowByUrlAndUserId :one
+WITH feed_cte AS (
+    SELECT id FROM feed WHERE url = $1
+) DELETE FROM feed_follow
+        WHERE feed_follow.user_id = $2 AND feed_id = (SELECT id FROM feed_cte)
+        RETURNING *;
+
 -- name: CheckFeedFollowExistence :one
 SELECT EXISTS (SELECT 1 FROM feed_follow WHERE user_id = $1 AND feed_id = $2);
 

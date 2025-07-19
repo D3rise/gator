@@ -9,11 +9,10 @@ import (
 
 func NewFollowCommand() Command {
 	return Command{
-		Name:                   "follow",
-		Args:                   []string{"feedUrl"},
-		Handler:                followCommandHandler,
-		RequiresAuthentication: true,
-		Description:            "Follow an RSS feed",
+		Name:        "follow",
+		Args:        []string{"feedUrl"},
+		Handler:     followCommandHandler,
+		Description: "Follow an RSS feed",
 	}
 }
 

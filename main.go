@@ -46,6 +46,7 @@ func main() {
 	appCLI.Register(commands.NewFeedsCommand())
 	appCLI.Register(commands.NewFollowCommand(), middleware.AuthMiddleware)
 	appCLI.Register(commands.NewFollowingCommand(), middleware.AuthMiddleware)
+	appCLI.Register(commands.NewUnfollowCommand(), middleware.AuthMiddleware)
 
 	// Help command must be registered last as
 	// it requires list of all registered commands
